@@ -13,7 +13,7 @@ CONFIG_DIR_PATH = Path(typer.get_app_dir(__app_name__))
 CONFIG_FILE_PATH = CONFIG_DIR_PATH / "config.ini"
 
 
-def init(db_path: str) -> int:
+def init_app(db_path: str) -> int:
     """Initialize the application"""
 
     # Initialize the configuration file
