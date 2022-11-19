@@ -1,13 +1,14 @@
 """This module provides RP To-Do CLI."""
 
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 import typer
 from todocli import (
-    ERRORS, __app_name__, __version__, config, database
+    ERRORS, __app_name__, __version__, config, database, todocli
 )
 
 app = typer.Typer()
+
 
 @app.command()
 def init(
@@ -41,10 +42,86 @@ def init(
         )
 
 
+def get_todoer() -> todocli.Todoer:
+    if config.CONFIG_FILE_PATH.exists():
+        db_path = database.get_database_path(config.CONFIG_FILE_PATH)
+    else:
+        typer.secho(
+            'Config file not found. Please, run "todocli init"',
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(1)
+
+    if db_path.exists():
+        return todocli.Todoer(db_path)
+    else:
+        typer.secho(
+            'Database not found. Please, run "todocli init"',
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(1)
+
+
+@app.command()
+def add(
+        description: List[str] = typer.Argument(...),
+        priority: int = typer.Option(2, "--priority", "-p", min=1, max=3),
+) -> None:
+    """Add a new to-do with a DESCRIPTION."""
+    todoer = get_todoer()
+    todo, error = todoer.add(description, priority)
+    if error:
+        typer.secho(
+            f'Adding to-do failed with "{ERRORS[error]}"', fg=typer.colors.RED
+        )
+        raise typer.Exit(1)
+    else:
+        typer.secho(
+            f"""to-do: "{todo['Description']}" was added """
+            f"""with priority: {priority}""",
+            fg=typer.colors.GREEN,
+        )
+
+
+@app.command(name="list")
+def list_all() -> None:
+    """List all to-dos."""
+    todoer = get_todoer()
+    todo_list = todoer.get_todo_list()
+
+    if len(todo_list) == 0:
+        typer.secho(
+            "There are no tasks in the to-do list yet", fg=typer.colors.RED
+        )
+        raise typer.Exit()
+
+    typer.secho("\nto-do list:\n", fg=typer.colors.BLUE, bold=True)
+    columns = (
+        "ID.  ",
+        "| Priority  ",
+        "| Done  ",
+        "| Description  ",
+    )
+    headers = "".join(columns)
+    typer.secho(headers, fg=typer.colors.BLUE, bold=True)
+    typer.secho("-" * len(headers), fg=typer.colors.BLUE)
+
+    for todo_number, todo in enumerate(todo_list, 1):
+        description, priority, done = todo.values()
+        typer.secho(
+            f"{todo_number}{(len(columns[0]) - len(str(todo_number))) * ' '}"
+            f"| ({priority}){(len(columns[1]) - len(str(priority)) - 4) * ' '}"
+            f"| {done}{(len(columns[2]) - len(str(done)) - 2) * ' '}"
+            f"| {description}",
+            fg=typer.colors.BLUE,
+        )
+
+    typer.secho("-" * len(headers) + "\n", fg=typer.colors.BLUE)
+
+
 def _version_callback(value: bool) -> None:
     if value:
         typer.echo(f"{__app_name__} v{__version__}")
-
         raise typer.Exit()
 
 
