@@ -136,6 +136,7 @@ def set_done(todo_id: int = typer.Argument(...)) -> None:
             fg=typer.colors.GREEN
         )
 
+
 @app.command()
 def remove(
         todo_id: int = typer.Argument(...),
@@ -153,12 +154,12 @@ def remove(
         if error:
             typer.secho(
                 f'Removing to-do #{todo_id} failed with error {ERRORS[error]}',
-                fg = typer.colors.RED
+                fg=typer.colors.RED
             )
         else:
             typer.secho(
                 f"""To-do #{todo_id}: "{todo['Description']}" was removed.""",
-                fg = typer.colors.GREEN
+                fg=typer.colors.GREEN
             )
 
     if force:
@@ -166,7 +167,7 @@ def remove(
     else:
         todo_list = todoer.get_todo_list()
         try:
-            todo = todo_list[todo_id-1]
+            todo = todo_list[todo_id - 1]
         except IndexError:
             typer.secho("Invalid TOD_ID", fg=typer.colors.RED)
             raise typer.Exit(1)
@@ -179,6 +180,31 @@ def remove(
             typer.echo("Operation canceled")
 
 
+@app.command(name="clear")
+def remove_all(
+        force: bool = typer.Option(
+            ...,
+            prompt="Delete all to-dos?",
+            help="Force deletion without confirmation."
+        )
+) -> None:
+    """Remove all to-dos."""
+    todoer = get_todoer()
+    if force:
+        error = todoer.remove_all().error
+        if error:
+            typer.secho(
+                f'Removing all to-dos failed with error {ERRORS[error]}',
+                fg=typer.colors.RED
+            )
+            raise typer.Exit(1)
+        else:
+            typer.secho(
+                "All to-dos were removed",
+                fg=typer.colors.GREEN
+            )
+    else:
+        typer.echo("Operation canceled")
 
 
 def _version_callback(value: bool) -> None:
